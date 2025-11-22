@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f8fafc; /* cinza bem claro */
+  --foreground: #0f172a; /* slate-900 */
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+/* remove sublinhado padrão de links mas mantém cor herdada */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ajuda o Tailwind com dark mode se você usar depois */
+:root[data-theme="dark"] {
+  --background: #020617; /* slate-950 */
+  --foreground: #e2e8f0; /* slate-200 */
+}
