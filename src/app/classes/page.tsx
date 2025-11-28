@@ -230,7 +230,12 @@ export default async function ClassesPage() {
                       className="border-t border-white/5 hover:bg-white/5 transition-colors"
                     >
                       <td className="px-4 py-3 font-medium text-slate-50">
-                        {cls.name}
+                        <Link
+                          href={`/classes/${cls.id}`}
+                          className="hover:underline underline-offset-4"
+                        >
+                          {cls.name}
+                        </Link>
                       </td>
                       <td className="px-4 py-3 text-slate-200/80">
                         {cls.year}
