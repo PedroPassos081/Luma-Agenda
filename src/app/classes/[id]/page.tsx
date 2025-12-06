@@ -140,9 +140,9 @@ async function addGradeToStudent(formData: FormData) {
     data: {
       classId,
       studentId,
-      subjectId: subject, // CORRIGIDO: Usa subjectId para passar o ID
+      subjectId: subject, 
       value,
-      term: term, // CORRIGIDO: Passa o bimestre capturado
+      term: term,
     },
   });
 
