@@ -6,11 +6,20 @@ import { useRouter } from "next/navigation";
 
 import Image from "next/image";
 
+import { GraduationCap, BookOpen, Users, NotebookPen, Calendar, MessageCircleMore} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const ROLES = [
-  { id: "admin", label: "Administrador", icon: "🎓" },
-  { id: "teacher", label: "Professor", icon: "📘" },
-  { id: "parent", label: "Responsável", icon: "👤" },
+
+type Role = {
+  id: "admin" | "teacher" | "parent";
+  label: string;
+  icon: LucideIcon;
+};
+
+const ROLES:Role[] = [
+  { id: "admin", label: "Administrador", icon: GraduationCap },
+  { id: "teacher", label: "Professor", icon: BookOpen },
+  { id: "parent", label: "Responsável", icon: Users },
 ] as const;
 
 type RoleId = (typeof ROLES)[number]["id"];
@@ -32,7 +41,7 @@ export default function LoginPage() {
       redirect: false,
       email,
       password,
-      role, // se quiser usar o tipo de acesso no backend depois
+      role, 
     });
 
     setLoading(false);
@@ -61,7 +70,7 @@ export default function LoginPage() {
       <div>
         <div className="bg-black/20 rounded-3xl p-10 shadow-xl">
           <Image
-            src="/logo.jpg"
+            src="/logo.png"
             alt="Luma"
             width={240}
             height={240}
@@ -74,15 +83,21 @@ export default function LoginPage() {
       {/* Cards */}
       <div className="grid grid-cols-3 gap-4 w-full">
         <div className="rounded-2xl bg-white/10 backdrop-blur px-4 py-3 text-center text-sm text-white shadow-lg border border-white/15">
-          <div className="text-lg mb-1">📊</div>
+          <div className="mb-2 flex justify-center">
+          <NotebookPen size={28} strokeWidth={1.7} />
+          </div>
           <p className="font-semibold">Notas e médias</p>
         </div>
         <div className="rounded-2xl bg-white/10 backdrop-blur px-4 py-3 text-center text-sm text-white shadow-lg border border-white/15">
-          <div className="text-lg mb-1">📗</div>
+          <div className="mb-2 flex justify-center">
+            <Calendar />
+            </div>
           <p className="font-semibold">Diário de classe</p>
         </div>
         <div className="rounded-2xl bg-white/10 backdrop-blur px-4 py-3 text-center text-sm text-white shadow-lg border border-white/15">
-          <div className="text-lg mb-1">💬</div>
+          <div className="mb-2 flex justify-center">
+            <MessageCircleMore />
+          </div>
           <p className="font-semibold">Observações</p>
         </div>
       </div>
@@ -108,7 +123,9 @@ export default function LoginPage() {
     {/* Seleção de perfil */}
     <div className="mb-8 grid grid-cols-3 gap-4">
       {ROLES.map((r) => {
+        const Icon = r.icon;
         const isActive = role === r.id;
+        
         return (
           <button
             key={r.id}
@@ -122,8 +139,16 @@ export default function LoginPage() {
                 : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
             ].join(" ")}
           >
-            <div className="text-xl mb-1">{r.icon}</div>
-            <span>{r.label}</span>
+           <div className="mb-1">
+  <Icon 
+    size={28} 
+    strokeWidth={1.7} 
+    className={isActive ? "text-[#5b21b6]" : "text-slate-500"} 
+  />
+</div>
+
+<span>{r.label}</span>
+
           </button>
         );
       })}
