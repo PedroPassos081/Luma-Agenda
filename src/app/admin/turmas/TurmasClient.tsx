@@ -1,34 +1,23 @@
+"use client";
 
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../api/auth/[...nextauth]/route";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { useState } from "react";
 import { Search, Users, Pencil, Trash2 } from "lucide-react";
-import type { Shift } from "@prisma/client";
+import type { Class, User, Shift } from "@prisma/client";
 
-const SHIFT_LABEL: Record<Shift, string> = {
-  MORNING: "Manhã",
-  AFTERNOON: "Tarde",
-  EVENING: "Noite",
-  FULLTIME: "Integral",
+type ClassWithTeacher = Class & {
+  teacher: User | null;
+  _count: {
+    students: number;
+  };
 };
 
-export default async function TurmasPage() {
-  const session = await getServerSession(authOptions);
+type Props = {
+  classes: ClassWithTeacher[];
+  shiftLabel: Record<Shift, string>;
+};
 
-  if (!session || session.user?.role !== "ADMIN") {
-    redirect("/login");
-  }
-
-  const classes = await prisma.class.findMany({
-    include: {
-      teacher: true,
-      _count: {
-        select: { students: true },
-      },
-    },
-    orderBy: [{ grade: "asc" }, { name: "asc" }],
-  });
+function TurmasClient({ classes, shiftLabel }: Props) {
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-6">
@@ -43,7 +32,10 @@ export default async function TurmasPage() {
           </p>
         </div>
 
-        <button className="inline-flex items-center rounded-full bg-[#7B2CBF] px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#6a23aa] transition-colors">
+        <button
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center rounded-full bg-[#7B2CBF] px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#6a23aa] transition-colors"
+        >
           + Nova Turma
         </button>
       </header>
@@ -89,7 +81,7 @@ export default async function TurmasPage() {
                 {classItem.name}
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                {classItem.grade} • {SHIFT_LABEL[classItem.shift]}
+                {classItem.grade} • {shiftLabel[classItem.shift]}
               </p>
 
               <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
@@ -115,6 +107,9 @@ export default async function TurmasPage() {
           </p>
         )}
       </section>
+
     </div>
   );
 }
+
+export default TurmasClient;
