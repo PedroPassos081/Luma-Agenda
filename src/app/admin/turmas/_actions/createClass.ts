@@ -12,6 +12,10 @@ export async function createClass(formData: FormData) {
     const shift = formData.get("shift") as Shift;
     const segment = formData.get("segment") as Segment;
 
+    if (!name || !grade || !year || !shift || !segment) {
+        throw new Error("Dados incompletos.");
+    }
+
     await prisma.class.create({
         data: {
             name,

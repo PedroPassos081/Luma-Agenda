@@ -12,13 +12,14 @@ export function Modal({ open, onClose, children }: ModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
         {children}
 
         <button
+          type="button"
           onClick={onClose}
-          className="mt-4 w-full text-sm text-slate-600 hover:text-slate-900"
+          className="mt-4 w-full text-sm text-slate-500 hover:text-slate-900"
         >
           Cancelar
         </button>
