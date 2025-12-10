@@ -13,9 +13,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <aside className="w-72 p-6 text-white bg-gradient-to-b from-[#5A189A] via-[#7B2CBF] to-[#9D4EDD] shadow-xl flex flex-col">
         <div className="flex items-center gap-3 mb-8">
           <Image
-            src="/logo.png"
+            src="/icon-admin.png"
             alt="Luma Logo"
-            width={48}
+            width={60}
             height={48}
             className="rounded-xl"
           />
