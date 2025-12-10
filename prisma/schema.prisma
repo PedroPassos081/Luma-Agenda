@@ -13,6 +13,20 @@ enum Role {
   PARENT
 }
 
+enum Shift {
+  MORNING     // Manhã
+  AFTERNOON   // Tarde
+  EVENING     // Noite
+  FULLTIME    // Integral
+}
+
+enum Segment {
+  INFANTIL
+  FUNDAMENTAL_I
+  FUNDAMENTAL_II
+  MEDIO
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -27,23 +41,47 @@ model User {
 
 
 model Class {
-  id        String       @id @default(cuid())
+  id        String   @id @default(cuid())
+
+  /// Nome da turma, ex: "5º Ano A"
   name      String
+
+  /// Série / ano escolar, ex: "5º Ano"
+  grade     String
+
+  /// Ano letivo, ex: 2025
   year      Int
-  teacher   User         @relation("TeacherClasses", fields: [teacherId], references: [id])
-  teacherId String
+
+  /// Turno: manhã / tarde / noite / integral
+  shift     Shift
+
+  /// Segmento: Infantil, Fundamental I/II, Médio
+  segment   Segment
+
+  /// Professor principal da turma (pode ser opcional)
+  teacher   User?    @relation("TeacherClasses", fields: [teacherId], references: [id])
+  teacherId String?
+
+  /// Matrículas dos alunos nessa turma
   students  Enrollment[]
-  grades    Grade[]      // 👈 lado inverso da relação com Grade
-  createdAt DateTime     @default(now())
+
+  /// Notas dos alunos nessa turma
+  grades    Grade[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 
+
 model Student {
-  id        String       @id @default(cuid())
-  name      String
-  createdAt DateTime     @default(now())
+  id         String       @id @default(cuid())
+  name       String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
   enrollments Enrollment[]
-  grades    Grade[]
+  grades      Grade[]
 }
 
 model Enrollment {
@@ -54,6 +92,7 @@ model Enrollment {
   classId   String
   createdAt DateTime @default(now())
 }
+
 
 model Subject {
   id        String   @id @default(cuid())
