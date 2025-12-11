@@ -2,15 +2,18 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { Shift, Segment } from "@prisma/client";
+import type { Shift, Segment } from "@prisma/client";
 
-export async function createClass(formData: FormData) {
-    const name = formData.get("name") as string;
-    const grade = formData.get("grade") as string;
-    const year = Number(formData.get("year"));
+export type ClassPayload = {
+    name: string;
+    grade: string;
+    year: number;
+    shift: Shift;
+    segment: Segment;
+};
 
-    const shift = formData.get("shift") as Shift;
-    const segment = formData.get("segment") as Segment;
+export async function createClass(data: ClassPayload) {
+    const { name, grade, year, shift, segment } = data;
 
     if (!name || !grade || !year || !shift || !segment) {
         throw new Error("Dados incompletos.");

@@ -72,8 +72,6 @@ model Class {
   updatedAt DateTime @updatedAt
 }
 
-
-
 model Student {
   id         String       @id @default(cuid())
   name       String

@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition, FormEvent } from "react";
 import { Search, Users, Pencil, Trash2 } from "lucide-react";
-import type { Class, User, Shift } from "@prisma/client";
+import type { Class, User, Shift, Segment } from "@prisma/client";
 import { Modal } from "../../../components/Modal/Modal";
-import { createClass } from "./_actions/createClass";
+import { createClass, type ClassPayload } from "./_actions/createClass";
+import { updateClass } from "./_actions/updateClass";
+import { deleteClass } from "./_actions/deleteClass";
 
 type ClassWithTeacher = Class & {
   teacher: User | null;
@@ -18,12 +20,72 @@ type Props = {
   shiftLabel: Record<Shift, string>;
 };
 
+type Mode = "create" | "edit";
+
 function TurmasClient({ classes, shiftLabel }: Props) {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<Mode>("create");
+  const [editingClass, setEditingClass] = useState<ClassWithTeacher | null>(
+    null
+  );
+  const [isPending, startTransition] = useTransition();
 
-  const handleCreateClass = async (formData: FormData) => {
-    await createClass(formData);
-    setOpen(false);
+  // Abrir modal em modo criação
+  const handleOpenCreate = () => {
+    setMode("create");
+    setEditingClass(null);
+    setOpen(true);
+  };
+
+  // Abrir modal em modo edição
+  const handleOpenEdit = (classItem: ClassWithTeacher) => {
+    setMode("edit");
+    setEditingClass(classItem);
+    setOpen(true);
+  };
+
+  // Excluir turma
+  const handleDelete = (id: string) => {
+    const ok = window.confirm(
+      "Tem certeza que deseja excluir esta turma? Essa ação não pode ser desfeita."
+    );
+    if (!ok) return;
+
+    startTransition(async () => {
+      await deleteClass(id);
+      // revalidatePath já é chamado dentro da server action
+    });
+  };
+
+  // Criar / editar turma
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    const basePayload: ClassPayload = {
+      name: (formData.get("name") as string) ?? "",
+      grade: (formData.get("grade") as string) ?? "",
+      year: Number(formData.get("year")),
+      shift: formData.get("shift") as Shift,
+      segment: formData.get("segment") as Segment,
+    };
+
+    startTransition(async () => {
+      if (mode === "create") {
+        await createClass(basePayload);
+      } else if (mode === "edit" && editingClass) {
+        await updateClass({
+          id: editingClass.id,
+          ...basePayload,
+        });
+      }
+
+      form.reset();
+      setEditingClass(null);
+      setMode("create");
+      setOpen(false);
+    });
   };
 
   return (
@@ -42,7 +104,7 @@ function TurmasClient({ classes, shiftLabel }: Props) {
 
           <button
             type="button"
-            onClick={() => setOpen(true)}
+            onClick={handleOpenCreate}
             className="inline-flex items-center rounded-full bg-[#7B2CBF] px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#6a23aa] transition-colors"
           >
             + Nova Turma
@@ -68,22 +130,20 @@ function TurmasClient({ classes, shiftLabel }: Props) {
           {classes.map((classItem) => (
             <div
               key={classItem.id}
-              className="
-                group relative rounded-2xl bg-white shadow-sm border border-slate-100 
-                px-6 py-5 flex flex-col justify-between 
-                hover:shadow-md transition-all
-              "
+              className="group relative rounded-2xl bg-white shadow-sm border border-slate-100 px-6 py-5 flex flex-col justify-between hover:shadow-md transition-all"
             >
               {/* Ícones de ação (hover) */}
               <div className="absolute top-4 right-4 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   type="button"
+                  onClick={() => handleOpenEdit(classItem)}
                   className="text-slate-500 hover:text-purple-600 transition-colors"
                 >
                   <Pencil size={18} strokeWidth={1.8} />
                 </button>
                 <button
                   type="button"
+                  onClick={() => handleDelete(classItem.id)}
                   className="text-red-500 hover:text-red-600 transition-colors"
                 >
                   <Trash2 size={18} strokeWidth={1.8} />
@@ -124,13 +184,13 @@ function TurmasClient({ classes, shiftLabel }: Props) {
         </section>
       </div>
 
-      {/* Modal de criação de turma */}
+      {/* Modal de criação/edição de turma */}
       <Modal open={open} onClose={() => setOpen(false)}>
         <h2 className="text-lg font-semibold text-slate-900 mb-4">
-          Criar nova turma
+          {mode === "create" ? "Criar nova turma" : "Editar turma"}
         </h2>
 
-        <form action={handleCreateClass} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div className="space-y-1">
             <label className="text-xs font-medium text-slate-600">
               Nome da turma
@@ -139,6 +199,7 @@ function TurmasClient({ classes, shiftLabel }: Props) {
               name="name"
               type="text"
               placeholder="Ex: 5º Ano A"
+              defaultValue={editingClass?.name ?? ""}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#7B2CBF]/60 focus:ring-2 focus:ring-[#7B2CBF]/15"
               required
             />
@@ -152,6 +213,7 @@ function TurmasClient({ classes, shiftLabel }: Props) {
               name="grade"
               type="text"
               placeholder="Ex: 5º Ano"
+              defaultValue={editingClass?.grade ?? ""}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#7B2CBF]/60 focus:ring-2 focus:ring-[#7B2CBF]/15"
               required
             />
@@ -165,6 +227,7 @@ function TurmasClient({ classes, shiftLabel }: Props) {
               name="year"
               type="number"
               placeholder="2025"
+              defaultValue={editingClass?.year ?? ""}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#7B2CBF]/60 focus:ring-2 focus:ring-[#7B2CBF]/15"
               required
             />
@@ -176,6 +239,7 @@ function TurmasClient({ classes, shiftLabel }: Props) {
             </label>
             <select
               name="shift"
+              defaultValue={editingClass?.shift ?? ""}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#7B2CBF]/60 focus:ring-2 focus:ring-[#7B2CBF]/15"
               required
             >
@@ -193,6 +257,7 @@ function TurmasClient({ classes, shiftLabel }: Props) {
             </label>
             <select
               name="segment"
+              defaultValue={editingClass?.segment ?? ""}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#7B2CBF]/60 focus:ring-2 focus:ring-[#7B2CBF]/15"
               required
             >
@@ -206,9 +271,16 @@ function TurmasClient({ classes, shiftLabel }: Props) {
 
           <button
             type="submit"
-            className="mt-2 w-full rounded-lg bg-[#7B2CBF] py-2 text-sm font-medium text-white hover:bg-[#6a23aa] transition-colors"
+            disabled={isPending}
+            className="mt-2 w-full rounded-lg bg-[#7B2CBF] py-2 text-sm font-medium text-white hover:bg-[#6a23aa] transition-colors disabled:opacity-60"
           >
-            Criar turma
+            {isPending
+              ? mode === "create"
+                ? "Criando..."
+                : "Salvando..."
+              : mode === "create"
+              ? "Criar turma"
+              : "Salvar alterações"}
           </button>
         </form>
       </Modal>
