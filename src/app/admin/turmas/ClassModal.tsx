@@ -2,11 +2,15 @@
 
 import { useState, useTransition, FormEvent } from "react";
 import { X } from "lucide-react";
+import { toast } from "sonner"; 
 import type { Class, Shift, Segment } from "@prisma/client";
-import { createClass, createClassSchema, type ClassPayload } from "./_actions/createClass";
+
+import { createClass } from "./_actions/createClass";
 import { updateClass } from "./_actions/updateClass";
 
-// Tipos
+import { createClassSchema, type ClassPayload } from "./schema"; 
+
+
 export type ClassWithRelations = Class & {
   teacher?: { id: string; name: string | null } | null;
   _count?: { students: number };
@@ -25,7 +29,6 @@ export function ClassModal({ mode, open, onClose, initialData }: ClassModalProps
   const [isPending, startTransition] = useTransition();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
-  // Se não estiver aberto, não renderiza nada
   if (!open) return null;
 
   const getError = (field: string) => fieldErrors[field]?.[0];
@@ -54,18 +57,19 @@ export function ClassModal({ mode, open, onClose, initialData }: ClassModalProps
       try {
         if (mode === "create") {
           await createClass(payload);
+          toast.success("Turma criada com sucesso!"); 
         } else if (mode === "edit" && initialData) {
           await updateClass({ id: initialData.id, ...payload });
+          toast.success("Turma atualizada com sucesso!");
         }
         onClose();
       } catch (err) {
         console.error(err);
-        alert("Erro ao salvar.");
+        toast.error("Erro ao salvar. Tente novamente.");
       }
     });
   }
 
-  // Helper de estilo
   const inputClass = (hasError: boolean) =>
     `mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all ${
       hasError
@@ -79,27 +83,21 @@ export function ClassModal({ mode, open, onClose, initialData }: ClassModalProps
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        
-        {/* Header */}
         <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-          </div>
+          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
           <button onClick={onClose} type="button" className="p-1 text-slate-400 hover:bg-slate-100 rounded-full">
             <X size={20} />
           </button>
         </div>
 
-        {/* Formulario */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          
           {/* Nome */}
           <div>
             <label className="text-sm font-medium text-slate-700">Nome da turma</label>
             <input
               name="name"
               type="text"
-              defaultValue={initialData?.name} // Usa defaultValue!
+              defaultValue={initialData?.name}
               className={inputClass(!!getError("name"))}
               placeholder='Ex: "5º Ano A"'
             />
@@ -153,7 +151,6 @@ export function ClassModal({ mode, open, onClose, initialData }: ClassModalProps
             </div>
           </div>
 
-          {/* Botão Salvar */}
           <div className="flex justify-end gap-2 mt-2">
              <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg">Cancelar</button>
              <button
@@ -164,7 +161,6 @@ export function ClassModal({ mode, open, onClose, initialData }: ClassModalProps
                {btnLabel}
              </button>
           </div>
-
         </form>
       </div>
     </div>

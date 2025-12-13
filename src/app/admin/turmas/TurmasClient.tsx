@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useTransition, FormEvent } from "react";
-import type { Class, User, Shift, Segment } from "@prisma/client";
+import type { Class, Shift, Segment } from "@prisma/client"; 
 
 import { toast } from "sonner";
-import { Users, Pencil, Trash2 } from "lucide-react";
+import { Users, Pencil, Trash2, GraduationCap } from "lucide-react"; 
 
 import { Modal } from "../../../components/Modal/Modal";
 
@@ -15,17 +15,14 @@ import { deleteClass } from "./_actions/deleteClass";
 import { createClassSchema, type ClassPayload } from "./schema";
 
 
-
-type ClassWithTeacher = Class & {
-  teacher: User | null;
-  _count: {
-    students: number;
-  };
+type ClassWithRelations = Class & {
+  teachers: { name: string }[]; 
+  _count: { students: number };
 };
 
 type Props = {
-  classes: ClassWithTeacher[];
-  shiftLabel: Record<Shift, string>;
+  classes: ClassWithRelations[];
+  shiftLabel: Record<string, string>; 
 };
 
 type Mode = "create" | "edit";
@@ -33,8 +30,9 @@ type Mode = "create" | "edit";
 function TurmasClient({ classes, shiftLabel }: Props) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>("create");
-  const [editingClass, setEditingClass] = useState<ClassWithTeacher | null>(null);
   
+  //  ESTADO ATUALIZADO PARA USAR O NOVO TIPO
+  const [editingClass, setEditingClass] = useState<ClassWithRelations | null>(null);
   
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [isPending, startTransition] = useTransition();
@@ -48,7 +46,7 @@ function TurmasClient({ classes, shiftLabel }: Props) {
     setOpen(true);
   };
 
-  const handleOpenEdit = (classItem: ClassWithTeacher) => {
+  const handleOpenEdit = (classItem: ClassWithRelations) => {
     setMode("edit");
     setEditingClass(classItem);
     setFieldErrors({});
@@ -56,13 +54,12 @@ function TurmasClient({ classes, shiftLabel }: Props) {
   };
 
   const handleDelete = (id: string) => {
-  // O toast.promise lida com o estado de loading sozinho!
-  toast.promise(deleteClass(id), {
-    loading: 'Excluindo turma...',
-    success: 'Turma excluída com sucesso!',
-    error: 'Erro ao excluir turma.',
-  });
-};
+    toast.promise(deleteClass(id), {
+      loading: 'Excluindo turma...',
+      success: 'Turma excluída com sucesso!',
+      error: 'Erro ao excluir turma.',
+    });
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -79,7 +76,6 @@ function TurmasClient({ classes, shiftLabel }: Props) {
       segment: formData.get("segment") as Segment,
     };
 
-    // Validação Zod
     const validation = createClassSchema.safeParse(payload);
 
     if (!validation.success) {
@@ -87,22 +83,21 @@ function TurmasClient({ classes, shiftLabel }: Props) {
       return;
     }
 
-    // Dentro do startTransition do handleSubmit...
-startTransition(async () => {
-  try {
-    if (mode === "create") {
-      await createClass(payload);
-      toast.success("Turma criada com sucesso!"); // <--- MUDOU AQUI
-    } else if (mode === "edit" && editingClass) {
-      await updateClass({ id: editingClass.id, ...payload });
-      toast.success("Turma atualizada com sucesso!"); // <--- MUDOU AQUI
-    }
-    setOpen(false);
-  } catch (error) {
-    console.error(error);
-    toast.error("Erro ao salvar a turma. Tente novamente."); // <--- MUDOU AQUI
-  }
-});
+    startTransition(async () => {
+      try {
+        if (mode === "create") {
+          await createClass(payload);
+          toast.success("Turma criada com sucesso!");
+        } else if (mode === "edit" && editingClass) {
+          await updateClass({ id: editingClass.id, ...payload });
+          toast.success("Turma atualizada com sucesso!");
+        }
+        setOpen(false);
+      } catch (error) {
+        console.error(error);
+        toast.error("Erro ao salvar a turma. Tente novamente.");
+      }
+    });
   };
 
   const inputClass = (hasError: boolean) => 
@@ -129,11 +124,6 @@ startTransition(async () => {
           </button>
         </header>
 
-        
-        <div className="max-w-md">
-           {/* ... busca ... */}
-        </div>
-
         <section className="grid gap-4 xl:grid-cols-3 lg:grid-cols-2">
             {classes.map((classItem) => (
              <div key={classItem.id} className="group relative rounded-2xl bg-white shadow-sm border border-slate-100 px-6 py-5 flex flex-col justify-between hover:shadow-md transition-all">
@@ -148,9 +138,23 @@ startTransition(async () => {
                 <div>
                     <h2 className="text-lg font-semibold text-slate-900">{classItem.name}</h2>
                     <p className="mt-1 text-sm text-slate-500">{classItem.grade} • {shiftLabel[classItem.shift]}</p>
-                    <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
-                        <Users size={16} strokeWidth={1.7} />
-                        <span>{classItem._count.students} alunos</span>
+                    
+                    <div className="mt-4 flex flex-col gap-2">
+                        {/* Exibe Professores */}
+                        <div className="flex items-center gap-2 text-sm text-slate-500">
+                             <GraduationCap size={16} strokeWidth={1.7} />
+                             <span className="truncate">
+                                {classItem.teachers.length > 0 
+                                  ? classItem.teachers.map(t => t.name).join(", ") 
+                                  : "Sem professor"}
+                             </span>
+                        </div>
+
+                        {/* Exibe Alunos */}
+                        <div className="flex items-center gap-2 text-sm text-slate-500">
+                            <Users size={16} strokeWidth={1.7} />
+                            <span>{classItem._count.students} alunos</span>
+                        </div>
                     </div>
                 </div>
              </div>

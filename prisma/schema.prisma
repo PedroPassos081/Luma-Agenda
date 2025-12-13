@@ -37,10 +37,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Mudei para relação Implícita (N:N) para facilitar o Multi-Select
+  
   teacherClasses  Class[] 
   
-  // Relação Implícita (N:N)
+  
   teacherSubjects Subject[] 
 }
 
@@ -52,8 +52,7 @@ model Class {
   shift Shift
   segment Segment
 
-  // AJUSTE AQUI: Mudamos de "teacher" (singular) para "teachers" (array)
-  // Isso permite que a turma tenha vários professores (Matemática, História, etc)
+  
   teachers User[] 
 
   students Enrollment[]
@@ -71,7 +70,7 @@ model Student {
   
   guardianName  String?
   guardianPhone String?
-  guardianEmail String? // <--- ADICIONEI ESTE CAMPO QUE ESTAVA FALTANDO
+  guardianEmail String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

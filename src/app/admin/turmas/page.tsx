@@ -1,5 +1,7 @@
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../api/auth/[...nextauth]/route";
+// Ajustei o import para o caminho absoluto que costuma ser mais seguro,
+// mas se o seu ../../ estava funcionando, pode manter.
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import type { Shift } from "@prisma/client";
@@ -21,7 +23,11 @@ export default async function TurmasPage() {
 
   const classes = await prisma.class.findMany({
     include: {
-      teacher: true,
+      // 👇 AQUI ESTAVA O ERRO!
+      // Mudamos de 'teacher' (singular) para 'teachers' (plural)
+      teachers: {
+        select: { name: true }, // Trazemos só o nome para o front ficar leve
+      },
       _count: {
         select: { students: true },
       },

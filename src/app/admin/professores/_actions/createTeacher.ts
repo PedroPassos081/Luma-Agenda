@@ -17,7 +17,6 @@ export async function createTeacher(data: TeacherPayload) {
             password: passwordHash,
             role: "TEACHER",
 
-            // Sua lógica estava certa! Só ajustamos para usar o objeto validado
             teacherSubjects: {
                 connect: validated.subjects?.map((id) => ({ id })) ?? [],
             },
