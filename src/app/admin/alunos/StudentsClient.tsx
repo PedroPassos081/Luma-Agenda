@@ -215,7 +215,7 @@ function StudentsClient({ students, classes }: Props) {
                         {getError("birthDate") && <span className="text-xs text-red-500">{getError("birthDate")}</span>}
                     </div>
 
-                    {/* 👇 O SELECT DE TURMA ENTROU AQUI */}
+                    {/* O SELECT DE TURMA ENTROU AQUI */}
                     <div className="space-y-1">
                         <label className="text-xs font-medium text-slate-600">Turma</label>
                         <select 
