@@ -33,10 +33,12 @@ model User {
   email     String   @unique
   password  String
   role      Role     @default(PARENT)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   teacherClasses Class[] @relation("TeacherClasses")
+  teacherSubjects Subject[] @relation("TeacherSubjects")
 }
 
 
@@ -100,8 +102,11 @@ model Enrollment {
 model Subject {
   id        String   @id @default(cuid())
   name      String
+
   createdAt DateTime @default(now())
   grades    Grade[]
+
+  teachers  User[]   @relation("TeacherSubjects")
 }
 
 model Grade {
