@@ -1,13 +1,20 @@
 "use client";
 
 import { useState, useTransition, FormEvent } from "react";
-import { Users, Pencil, Trash2 } from "lucide-react";
 import type { Class, User, Shift, Segment } from "@prisma/client";
+
+import { toast } from "sonner";
+import { Users, Pencil, Trash2 } from "lucide-react";
+
 import { Modal } from "../../../components/Modal/Modal";
+
 import { createClass } from "./_actions/createClass";
 import { updateClass } from "./_actions/updateClass";
 import { deleteClass } from "./_actions/deleteClass";
+
 import { createClassSchema, type ClassPayload } from "./schema";
+
+
 
 type ClassWithTeacher = Class & {
   teacher: User | null;
@@ -49,15 +56,13 @@ function TurmasClient({ classes, shiftLabel }: Props) {
   };
 
   const handleDelete = (id: string) => {
-    const ok = window.confirm(
-      "Tem certeza que deseja excluir esta turma? Essa ação não pode ser desfeita."
-    );
-    if (!ok) return;
-
-    startTransition(async () => {
-      await deleteClass(id);
-    });
-  };
+  // O toast.promise lida com o estado de loading sozinho!
+  toast.promise(deleteClass(id), {
+    loading: 'Excluindo turma...',
+    success: 'Turma excluída com sucesso!',
+    error: 'Erro ao excluir turma.',
+  });
+};
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -82,22 +87,22 @@ function TurmasClient({ classes, shiftLabel }: Props) {
       return;
     }
 
-    startTransition(async () => {
-      try {
-        if (mode === "create") {
-          await createClass(payload);
-        } else if (mode === "edit" && editingClass) {
-          await updateClass({
-            id: editingClass.id,
-            ...payload,
-          });
-        }
-        setOpen(false);
-      } catch (error) {
-        console.error("Erro ao salvar:", error);
-        alert("Erro ao salvar a turma.");
-      }
-    });
+    // Dentro do startTransition do handleSubmit...
+startTransition(async () => {
+  try {
+    if (mode === "create") {
+      await createClass(payload);
+      toast.success("Turma criada com sucesso!"); // <--- MUDOU AQUI
+    } else if (mode === "edit" && editingClass) {
+      await updateClass({ id: editingClass.id, ...payload });
+      toast.success("Turma atualizada com sucesso!"); // <--- MUDOU AQUI
+    }
+    setOpen(false);
+  } catch (error) {
+    console.error(error);
+    toast.error("Erro ao salvar a turma. Tente novamente."); // <--- MUDOU AQUI
+  }
+});
   };
 
   const inputClass = (hasError: boolean) => 
