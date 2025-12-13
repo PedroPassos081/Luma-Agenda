@@ -1,48 +1,44 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../api/auth/[...nextauth]/route";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import StudentsClient, { StudentListItem } from "./StudentsClient";
+import StudentsClient, { type StudentListItem } from "./StudentsClient";
 
-export default async function StudentsPage() {
-  const session = await getServerSession(authOptions);
-
-  if (!session || session.user?.role !== "ADMIN") {
-    redirect("/login");
-  }
-
-  const students = await prisma.student.findMany({
+export default async function AlunosPage() {
+  // 1. Busca alunos (com a turma)
+  const studentsRaw = await prisma.student.findMany({
+    orderBy: { name: "asc" },
     include: {
       enrollments: {
-        include: {
-          class: true,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: 1, // pega a turma mais recente
+        include: { class: true },
+        take: 1, // Pega a turma atual
       },
-    },
-    orderBy: {
-      name: "asc",
     },
   });
 
-  const studentsForClient: StudentListItem[] = students.map((student) => {
-    const enrollment = student.enrollments[0];
-    const currentClass = enrollment?.class;
+  // 2. Busca TODAS as turmas disponíveis para o select
+  const classesAvailable = await prisma.class.findMany({
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, grade: true, shift: true }, // Trazemos dados extras para ficar bonito no select
+  });
 
+  // 3. Formata os dados
+  const formattedStudents: StudentListItem[] = studentsRaw.map((student) => {
+    const currentClass = student.enrollments[0]?.class;
+    
     return {
       id: student.id,
       name: student.name,
-      // por enquanto não temos esses campos no banco, então deixo nulo
-      birthDate: null,
-      guardianName: null,
-      guardianEmail: null,
-      guardianPhone: null,
+      birthDate: student.birthDate,
       className: currentClass?.name ?? "Sem turma",
+      classId: currentClass?.id ?? "", 
+      guardianName: student.guardianName,
+      guardianEmail: student.guardianEmail,
+      guardianPhone: student.guardianPhone,
     };
   });
 
-  return <StudentsClient students={studentsForClient} />;
+  return (
+    <StudentsClient 
+      students={formattedStudents} 
+      classes={classesAvailable} // Passamos as turmas aqui
+    />
+  );
 }
