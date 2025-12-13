@@ -76,10 +76,9 @@ model Student {
   id         String       @id @default(cuid())
   name       String
 
-  birthDate     DateTime?    // ✅ novo
-  guardianName  String?      // ✅ novo
-  guardianEmail String?      // ✅ novo
-  guardianPhone String?      // ✅ novo
+  birthDate     DateTime?   
+  guardianName  String?      
+  guardianPhone String?    
 
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
