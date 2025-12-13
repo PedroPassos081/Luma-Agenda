@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import type { Class, Shift, Segment } from "@prisma/client";
+import { useState, useTransition, FormEvent } from "react";
 import { X } from "lucide-react";
-import { createClass, type ClassPayload } from "./_actions/createClass";
+import type { Class, Shift, Segment } from "@prisma/client";
+import { createClass, createClassSchema, type ClassPayload } from "./_actions/createClass";
 import { updateClass } from "./_actions/updateClass";
 
-
-
+// Tipos
 export type ClassWithRelations = Class & {
   teacher?: { id: string; name: string | null } | null;
   _count?: { students: number };
@@ -19,100 +18,37 @@ type ClassModalProps = {
   mode: Mode;
   open: boolean;
   onClose: () => void;
-  /** dados da turma quando for edição */
   initialData?: ClassWithRelations | null;
 };
 
-// ----------------------
-// Labels bonitinhos
-// ----------------------
-
-const SHIFT_LABEL: Record<Shift, string> = {
-  MORNING: "Manhã",
-  AFTERNOON: "Tarde",
-  EVENING: "Noite",
-  FULLTIME: "Integral",
-};
-
-const SEGMENT_LABEL: Record<Segment, string> = {
-  INFANTIL: "Educação Infantil",
-  FUNDAMENTAL_I: "Fundamental I",
-  FUNDAMENTAL_II: "Fundamental II",
-  MEDIO: "Ensino Médio",
-};
-
-const SHIFT_OPTIONS = (Object.keys(SHIFT_LABEL) as Shift[]).map((value) => ({
-  value,
-  label: SHIFT_LABEL[value],
-}));
-
-const SEGMENT_OPTIONS = (Object.keys(SEGMENT_LABEL) as Segment[]).map(
-  (value) => ({
-    value,
-    label: SEGMENT_LABEL[value],
-  })
-);
-
-// ----------------------
-// Componente
-// ----------------------
-
 export function ClassModal({ mode, open, onClose, initialData }: ClassModalProps) {
   const [isPending, startTransition] = useTransition();
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
-  // estados do formulário
-  const [name, setName] = useState("");
-  const [grade, setGrade] = useState("");
-  const [year, setYear] = useState<number | "">("");
-  const [shift, setShift] = useState<Shift>("MORNING");
-  const [segment, setSegment] = useState<Segment>("INFANTIL");
-  const [error, setError] = useState<string | null>(null);
-
-  // Preenche os campos quando abrir em modo edição
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
-   if (open && mode === "edit" && initialData) {
-    setName(initialData.name);
-    setGrade(initialData.grade);
-    setYear(initialData.year);
-    setShift(initialData.shift);
-    setSegment(initialData.segment);
-    setError(null);
-  }
-
-  if (open && mode === "create") {
-    setName("");
-    setGrade("");
-    setYear(new Date().getFullYear());
-    setShift("MORNING");
-    setSegment("FUNDAMENTAL_I");
-    setError(null);
-  }
-}, [open, mode, initialData]);
-
+  // Se não estiver aberto, não renderiza nada
   if (!open) return null;
 
-  function handleClose() {
-    if (isPending) return;
-    onClose();
-  }
+  const getError = (field: string) => fieldErrors[field]?.[0];
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError(null);
+    setFieldErrors({});
 
-    if (!name.trim() || !grade.trim() || year === "") {
-      setError("Preencha nome, série e ano letivo.");
+    const formData = new FormData(e.currentTarget);
+    const payload: ClassPayload = {
+      name: (formData.get("name") as string) ?? "",
+      grade: (formData.get("grade") as string) ?? "",
+      year: Number(formData.get("year")),
+      shift: formData.get("shift") as Shift,
+      segment: formData.get("segment") as Segment,
+    };
+
+    const validation = createClassSchema.safeParse(payload);
+
+    if (!validation.success) {
+      setFieldErrors(validation.error.flatten().fieldErrors);
       return;
     }
-
-    const payload: ClassPayload = {
-    name,
-    grade,
-    year: Number(year),
-    shift,
-    segment,
-};
 
     startTransition(async () => {
       try {
@@ -121,151 +57,114 @@ export function ClassModal({ mode, open, onClose, initialData }: ClassModalProps
         } else if (mode === "edit" && initialData) {
           await updateClass({ id: initialData.id, ...payload });
         }
-
         onClose();
       } catch (err) {
         console.error(err);
-        setError("Não foi possível salvar a turma. Tente novamente.");
+        alert("Erro ao salvar.");
       }
     });
   }
 
+  // Helper de estilo
+  const inputClass = (hasError: boolean) =>
+    `mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all ${
+      hasError
+        ? "border-red-300 focus:border-red-500 focus:ring-red-100"
+        : "border-slate-200 focus:border-[#7B2CBF]/60 focus:ring-2 focus:ring-[#7B2CBF]/15"
+    }`;
+
   const title = mode === "create" ? "Nova turma" : "Editar turma";
-  const submitLabel = isPending
-    ? mode === "create"
-      ? "Criando..."
-      : "Salvando..."
-    : mode === "create"
-    ? "Criar turma"
-    : "Salvar alterações";
+  const btnLabel = isPending ? "Salvando..." : mode === "create" ? "Criar turma" : "Salvar alterações";
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-            <p className="text-xs text-slate-500">
-              Defina os dados básicos da turma. Depois você poderá vincular
-              alunos, professores e disciplinas.
-            </p>
           </div>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-          >
-            <X size={16} />
+          <button onClick={onClose} type="button" className="p-1 text-slate-400 hover:bg-slate-100 rounded-full">
+            <X size={20} />
           </button>
         </div>
 
-        {/* Form */}
+        {/* Formulario */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nome da turma */}
+          
+          {/* Nome */}
           <div>
-            <label className="text-sm font-medium text-slate-700">
-              Nome da turma
-            </label>
+            <label className="text-sm font-medium text-slate-700">Nome da turma</label>
             <input
+              name="name"
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder='Ex.: "5º Ano A"'
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#7B2CBF]/60 focus:ring-2 focus:ring-[#7B2CBF]/15"
+              defaultValue={initialData?.name} // Usa defaultValue!
+              className={inputClass(!!getError("name"))}
+              placeholder='Ex: "5º Ano A"'
             />
+            {getError("name") && <span className="text-xs text-red-500">{getError("name")}</span>}
           </div>
 
-          {/* Série + ano */}
+          {/* Série e Ano */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-slate-700">
-                Série / ano escolar
-              </label>
+              <label className="text-sm font-medium text-slate-700">Série</label>
               <input
+                name="grade"
                 type="text"
-                value={grade}
-                onChange={(e) => setGrade(e.target.value)}
-                placeholder='Ex.: "5º Ano"'
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#7B2CBF]/60 focus:ring-2 focus:ring-[#7B2CBF]/15"
+                defaultValue={initialData?.grade}
+                className={inputClass(!!getError("grade"))}
+                placeholder='Ex: "5º Ano"'
               />
             </div>
-
             <div>
-              <label className="text-sm font-medium text-slate-700">
-                Ano letivo
-              </label>
+              <label className="text-sm font-medium text-slate-700">Ano letivo</label>
               <input
+                name="year"
                 type="number"
-                value={year}
-                onChange={(e) => setYear(e.target.value ? Number(e.target.value) : "")}
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#7B2CBF]/60 focus:ring-2 focus:ring-[#7B2CBF]/15"
+                defaultValue={initialData?.year ?? new Date().getFullYear()}
+                className={inputClass(!!getError("year"))}
               />
             </div>
           </div>
 
-          {/* Turno + segmento */}
+          {/* Turno e Segmento */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-slate-700">
-                Turno
-              </label>
-              <select
-                value={shift}
-                onChange={(e) => setShift(e.target.value as Shift)}
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#7B2CBF]/60 focus:ring-2 focus:ring-[#7B2CBF]/15"
-              >
-                {SHIFT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
+              <label className="text-sm font-medium text-slate-700">Turno</label>
+              <select name="shift" defaultValue={initialData?.shift ?? ""} className={inputClass(!!getError("shift"))}>
+                <option value="">Selecione</option>
+                <option value="MORNING">Manhã</option>
+                <option value="AFTERNOON">Tarde</option>
+                <option value="EVENING">Noite</option>
+                <option value="FULLTIME">Integral</option>
               </select>
             </div>
-
             <div>
-              <label className="text-sm font-medium text-slate-700">
-                Segmento
-              </label>
-              <select
-                value={segment}
-                onChange={(e) => setSegment(e.target.value as Segment)}
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#7B2CBF]/60 focus:ring-2 focus:ring-[#7B2CBF]/15"
-              >
-                {SEGMENT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
+              <label className="text-sm font-medium text-slate-700">Segmento</label>
+              <select name="segment" defaultValue={initialData?.segment ?? ""} className={inputClass(!!getError("segment"))}>
+                <option value="">Selecione</option>
+                <option value="INFANTIL">Infantil</option>
+                <option value="FUNDAMENTAL_I">Fundamental I</option>
+                <option value="FUNDAMENTAL_II">Fundamental II</option>
+                <option value="MEDIO">Ensino Médio</option>
               </select>
             </div>
           </div>
 
-          {/* Erro */}
-          {error && (
-            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
-              {error}
-            </p>
-          )}
-
-          {/* Botões */}
-          <div className="mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={isPending}
-              className="rounded-full border border-slate-200 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isPending}
-              className="rounded-full bg-[#7B2CBF] px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#6a23aa] disabled:opacity-60"
-            >
-              {submitLabel}
-            </button>
+          {/* Botão Salvar */}
+          <div className="flex justify-end gap-2 mt-2">
+             <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg">Cancelar</button>
+             <button
+               type="submit"
+               disabled={isPending}
+               className="bg-[#7B2CBF] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#6a23aa] disabled:opacity-50"
+             >
+               {btnLabel}
+             </button>
           </div>
+
         </form>
       </div>
     </div>
