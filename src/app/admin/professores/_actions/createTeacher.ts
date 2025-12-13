@@ -2,34 +2,27 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { teacherSchema } from "../schema";
 import bcrypt from "bcryptjs";
+import { createTeacherSchema, type TeacherPayload } from "../schema";
 
-export async function createTeacher(formData: FormData) {
-    const data = {
-        name: String(formData.get("name")),
-        email: String(formData.get("email")),
-        subjects: formData.getAll("subjects") as string[],
-        classes: formData.getAll("classes") as string[],
-    };
-
-    const parsed = teacherSchema.parse(data);
+export async function createTeacher(data: TeacherPayload) {
+    const validated = createTeacherSchema.parse(data);
 
     const passwordHash = await bcrypt.hash("123456", 10);
 
     await prisma.user.create({
         data: {
-            name: parsed.name,
-            email: parsed.email,
+            name: validated.name,
+            email: validated.email,
             password: passwordHash,
             role: "TEACHER",
 
+            // Sua lógica estava certa! Só ajustamos para usar o objeto validado
             teacherSubjects: {
-                connect: parsed.subjects?.map((id) => ({ id })) ?? [],
+                connect: validated.subjects?.map((id) => ({ id })) ?? [],
             },
-
             teacherClasses: {
-                connect: parsed.classes?.map((id) => ({ id })) ?? [],
+                connect: validated.classes?.map((id) => ({ id })) ?? [],
             },
         },
     });

@@ -2,33 +2,26 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { teacherSchema } from "../schema";
+import { updateTeacherSchema, type UpdateTeacherPayload } from "../schema";
 
-export async function updateTeacher(
-    teacherId: string,
-    formData: FormData
-) {
-    const data = {
-        name: String(formData.get("name")),
-        email: String(formData.get("email")),
-        subjects: formData.getAll("subjects") as string[],
-        classes: formData.getAll("classes") as string[],
-    };
-
-    const parsed = teacherSchema.parse(data);
+export async function updateTeacher(data: UpdateTeacherPayload) {
+    const validated = updateTeacherSchema.parse(data);
+    const { id, ...rest } = validated;
 
     await prisma.user.update({
-        where: { id: teacherId },
+        where: { id },
         data: {
-            name: parsed.name,
-            email: parsed.email,
+            name: rest.name,
+            email: rest.email,
 
+            // Atualiza as disciplinas
             teacherSubjects: {
-                set: parsed.subjects?.map((id) => ({ id })) ?? [],
+                set: rest.subjects?.map((subjectId) => ({ id: subjectId })) ?? [],
             },
 
+            // Atualiza as turmas
             teacherClasses: {
-                set: parsed.classes?.map((id) => ({ id })) ?? [],
+                set: rest.classes?.map((classId) => ({ id: classId })) ?? [],
             },
         },
     });
