@@ -1,6 +1,4 @@
 import { getServerSession } from "next-auth";
-// Ajustei o import para o caminho absoluto que costuma ser mais seguro,
-// mas se o seu ../../ estava funcionando, pode manter.
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";

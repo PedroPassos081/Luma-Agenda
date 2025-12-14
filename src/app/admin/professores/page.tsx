@@ -1,8 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-// Verifique se o caminho do authOptions está correto. 
-// Geralmente é "../../../api/..." se a pasta api estiver na raiz de app/
+
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
 
 // Mudamos o nome aqui para bater com o arquivo novo
