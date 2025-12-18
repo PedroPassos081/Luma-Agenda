@@ -10,6 +10,7 @@ import {
   BookOpen,
   FileText,
   Settings,
+  ClipboardPen
 } from "lucide-react";
 
 interface SidebarItemProps {
@@ -64,6 +65,11 @@ export function AdminSidebar() {
         href="/admin/professores"
         label="Professores"
         icon={<GraduationCap />}
+      />
+      <SidebarItem
+        href="/admin/notas"
+        label="Notas"
+        icon={<ClipboardPen />}
       />
       <SidebarItem
         href="/admin/disciplinas"
