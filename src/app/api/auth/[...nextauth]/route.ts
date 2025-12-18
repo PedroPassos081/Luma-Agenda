@@ -5,10 +5,10 @@ import NextAuth, {
 } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "../../../../lib/prisma"; // ou "@/lib/prisma" se o alias estiver ok
+import { prisma } from "../../../../lib/prisma";
 import bcrypt from "bcrypt";
 
-// 🔹 Module augmentation DO PRÓPRIO NEXTAUTH (no mesmo arquivo)
+// Module augmentation DO PRÓPRIO NEXTAUTH (no mesmo arquivo)
 declare module "next-auth" {
   interface User {
     id: string;
@@ -60,7 +60,6 @@ export const authOptions: NextAuthOptions = {
 
         if (!isValid) return null;
 
-        // Aqui o NextAuth já entende isso como `User`
         const authUser: NextAuthUser = {
           id: user.id,
           name: user.name,

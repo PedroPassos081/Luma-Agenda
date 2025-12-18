@@ -1,30 +1,43 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { createTeacherSchema, TeacherPayload } from "../schema";
+import bcrypt from "bcrypt";
 import { revalidatePath } from "next/cache";
-import bcrypt from "bcryptjs";
-import { createTeacherSchema, type TeacherPayload } from "../schema";
 
 export async function createTeacher(data: TeacherPayload) {
-    const validated = createTeacherSchema.parse(data);
+    //  Valida os dados no backend também
+    const result = createTeacherSchema.safeParse(data);
 
-    const passwordHash = await bcrypt.hash("123456", 10);
+    if (!result.success) {
+        throw new Error("Dados inválidos");
+    }
 
+    const { name, email, password, subjects, classes } = result.data;
+
+    // Define a senha: Se veio no formulário usa ela, senão usa "mudar123"
+    const plainTextPassword = password || "mudar123";
+
+    // Criptografa a senha
+    const hashedPassword = await bcrypt.hash(plainTextPassword, 10);
+
+    // Cria no Banco com Prisma
     await prisma.user.create({
         data: {
-            name: validated.name,
-            email: validated.email,
-            password: passwordHash,
+            name,
+            email,
+            password: hashedPassword,
             role: "TEACHER",
-
+            // Conecta as disciplinas (NxN)
             teacherSubjects: {
-                connect: validated.subjects?.map((id) => ({ id })) ?? [],
+                connect: subjects.map((id) => ({ id })),
             },
+            // Conecta as turmas (NxN)
             teacherClasses: {
-                connect: validated.classes?.map((id) => ({ id })) ?? [],
+                connect: classes.map((id) => ({ id })),
             },
         },
     });
 
-    revalidatePath("/admin/professores");
+    revalidatePath("/teachers"); // Atualiza a lista na tela
 }

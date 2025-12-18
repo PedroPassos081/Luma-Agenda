@@ -82,6 +82,7 @@ function TeachersClient({ teachers, subjects, classes }: Props) {
     const payload: TeacherPayload = {
       name: formData.get("name") as string,
       email: formData.get("email") as string,
+      password: formData.get("password") as string,
       // O getAll pega todos os checkboxes marcados com o mesmo name
       subjects: formData.getAll("subjects") as string[],
       classes: formData.getAll("classes") as string[],
@@ -181,7 +182,6 @@ function TeachersClient({ teachers, subjects, classes }: Props) {
                       </div>
                     </div>
                   </div>
-
                   <div className="mt-4 space-y-3">
                     {/* Tags Disciplinas */}
                     <div>
@@ -255,6 +255,26 @@ function TeachersClient({ teachers, subjects, classes }: Props) {
                     className={inputClass(!!getError("email"))}
                     />
                     {getError("email") && <span className="text-xs text-red-500">{getError("email")}</span>}
+                </div>
+
+                 <div className="space-y-1">
+                    <label className="text-xs font-medium text-slate-600">
+                        Senha de Acesso
+                    </label>
+                    <input
+                        name="password"
+                        type="password"
+                        placeholder={mode === "create" ? "Digite a senha inicial" : "Deixe em branco para manter a atual"}
+                        className={inputClass(!!getError("password"))}
+                    />
+                    {getError("password") && (
+                        <span className="text-xs text-red-500">{getError("password")}</span>
+                    )}
+                    {mode === "edit" && (
+                        <p className="text-[10px] text-slate-400">
+                            * Preencha apenas se desejar alterar a senha do professor.
+                        </p>
+                    )}
                 </div>
 
                 {/* CHECKBOXES PARA DISCIPLINAS */}
