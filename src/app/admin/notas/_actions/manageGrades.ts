@@ -9,19 +9,37 @@ const gradeSchema = z.object({
     classId: z.string().cuid(),
     subjectId: z.string().cuid(),
     term: z.coerce.number().min(1).max(4),
-    value: z.coerce.number().min(0).max(10),
+    testGrade: z.coerce.number().min(0).max(10).optional().default(0),
+    workGrade: z.coerce.number().min(0).max(10).optional().default(0),
+    behaviorGrade: z.coerce.number().min(0).max(10).optional().default(0),
 });
 
 export async function upsertGrade(formData: FormData) {
-    const payload = {
+    const rawData = {
         studentId: formData.get("studentId"),
         classId: formData.get("classId"),
         subjectId: formData.get("subjectId"),
         term: formData.get("term"),
-        value: formData.get("value"),
+        testGrade: formData.get("testGrade") || "0",
+        workGrade: formData.get("workGrade") || "0",
+        behaviorGrade: formData.get("behaviorGrade") || "0",
     };
 
-    const validated = gradeSchema.parse(payload);
+    const validated = gradeSchema.parse(rawData);
+
+    const finalAverage =
+        (validated.testGrade + validated.workGrade + validated.behaviorGrade) / 3;
+
+    const dataToSave = {
+        studentId: validated.studentId,
+        subjectId: validated.subjectId,
+        classId: validated.classId,
+        term: validated.term,
+        testGrade: validated.testGrade,
+        workGrade: validated.workGrade,
+        behaviorGrade: validated.behaviorGrade,
+        value: parseFloat(finalAverage.toFixed(1)), // Salva com 1 casa decimal
+    };
 
     const existingGrade = await prisma.grade.findFirst({
         where: {
@@ -35,20 +53,20 @@ export async function upsertGrade(formData: FormData) {
     if (existingGrade) {
         await prisma.grade.update({
             where: { id: existingGrade.id },
-            data: { value: validated.value },
+            data: {
+                testGrade: dataToSave.testGrade,
+                workGrade: dataToSave.workGrade,
+                behaviorGrade: dataToSave.behaviorGrade,
+                value: dataToSave.value,
+            },
         });
     } else {
         await prisma.grade.create({
-            data: {
-                studentId: validated.studentId,
-                subjectId: validated.subjectId,
-                classId: validated.classId,
-                term: validated.term,
-                value: validated.value,
-            },
+            data: dataToSave,
         });
     }
 
     revalidatePath("/admin/notas");
+    revalidatePath("/admin/relatorios"); // Atualiza o boletim também
     return { success: true };
 }

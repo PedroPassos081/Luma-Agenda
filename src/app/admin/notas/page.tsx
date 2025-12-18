@@ -7,7 +7,12 @@ import GradesClient from "./GradesClient";
 type StudentGradeData = {
   id: string;
   name: string;
-  gradeValue: number | null;
+  grade?: {
+    testGrade: number;
+    workGrade: number;
+    behaviorGrade: number;
+    value: number;
+  } | null;
 };
 
 export default async function NotasPage({
@@ -54,11 +59,22 @@ export default async function NotasPage({
       orderBy: { student: { name: "asc" } },
     });
 
-    studentsData = enrollments.map((e) => ({
-      id: e.student.id,
-      name: e.student.name,
-      gradeValue: e.student.grades[0]?.value ?? null,
-    }));
+    studentsData = enrollments.map((e) => {
+      // Pega a primeira nota (se existir)
+      const g = e.student.grades[0]; 
+
+      return {
+        id: e.student.id,
+        name: e.student.name,
+        // Passamos o objeto inteiro agora
+        grade: g ? {
+          testGrade: g.testGrade ?? 0,
+          workGrade: g.workGrade ?? 0,
+          behaviorGrade: g.behaviorGrade ?? 0,
+          value: g.value,
+        } : null
+      };
+    });
   }
 
   return (

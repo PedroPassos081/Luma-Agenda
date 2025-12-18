@@ -102,13 +102,20 @@ model Subject {
 
 model Grade {
   id        String   @id @default(cuid())
-  student   Student  @relation(fields: [studentId], references: [id])
-  studentId String
-  subject   Subject  @relation(fields: [subjectId], references: [id])
-  subjectId String
-  class     Class    @relation(fields: [classId], references: [id])
-  classId   String
-  value     Float
-  term      Int
+  value     Float    // Média Final (Calculada automaticamente)
+  
+  testGrade         Float?   @default(0) // 1. Avaliação / Prova
+  workGrade         Float?   @default(0) // 2. Trabalhos
+  behaviorGrade     Float?   @default(0) // 3. Participação
+
+  term      Int      // 1, 2, 3, 4
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  classId   String
+  class     Class   @relation(fields: [classId], references: [id])
 }
