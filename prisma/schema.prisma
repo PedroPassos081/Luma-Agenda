@@ -66,8 +66,9 @@ model Student {
   id   String @id @default(cuid())
   name String
 
-  birthDate DateTime?
+  email         String?
   
+  birthDate DateTime?
   guardianName  String?
   guardianPhone String?
   guardianEmail String?

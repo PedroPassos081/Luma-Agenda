@@ -27,7 +27,7 @@ type RoleId = (typeof ROLES)[number]["id"];
 export default function LoginPage() {
   const router = useRouter();
   const [role, setRole] = useState<RoleId>("admin");
-  const [email, setEmail] = useState("admin@schoolflow.dev");
+  const [email, setEmail] = useState("admin@teste.com");
   const [password, setPassword] = useState("123456");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
