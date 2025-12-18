@@ -10,17 +10,15 @@ type StudentGradeData = {
   gradeValue: number | null;
 };
 
-type PageProps = {
-  searchParams?: {
-    classId?: string;
-    subjectId?: string;
-    term?: string;
-  };
-};
-
-export default async function NotasPage({ searchParams }: PageProps) {
+export default async function NotasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ classId?: string; subjectId?: string; term?: string }>;
+}) {
   const session = await getServerSession(authOptions);
   if (!session || session.user?.role !== "ADMIN") redirect("/login");
+
+  const params = await searchParams;
 
   const classes = await prisma.class.findMany({
     orderBy: { name: "asc" },
@@ -32,25 +30,21 @@ export default async function NotasPage({ searchParams }: PageProps) {
     select: { id: true, name: true },
   });
 
-  const classId = searchParams?.classId;
-  const subjectId = searchParams?.subjectId;
-  const termParam = searchParams?.term;
-
   let studentsData: StudentGradeData[] = [];
 
-  if (classId && subjectId) {
-    const term = Number(termParam ?? "1");
+  if (params.classId && params.subjectId) {
+    const term = Number(params.term ?? "1");
 
     const enrollments = await prisma.enrollment.findMany({
-      where: { classId },
+      where: { classId: params.classId },
       include: {
         student: {
           include: {
             grades: {
               where: {
-                subjectId,
-                term,
-                classId,
+                subjectId: params.subjectId,
+                term: term,
+                classId: params.classId,
               },
               take: 1,
             },
@@ -72,9 +66,9 @@ export default async function NotasPage({ searchParams }: PageProps) {
       classes={classes}
       subjects={subjects}
       students={studentsData}
-      selectedClassId={classId}
-      selectedSubjectId={subjectId}
-      selectedTerm={termParam}
+      selectedClassId={params.classId}
+      selectedSubjectId={params.subjectId}
+      selectedTerm={params.term}
     />
   );
 }
