@@ -13,13 +13,13 @@ export default async function AlunosPage() {
     },
   });
 
-  // 2. Busca TODAS as turmas disponíveis para o select
+  //  Busca TODAS as turmas disponíveis para o select
   const classesAvailable = await prisma.class.findMany({
     orderBy: { name: "asc" },
-    select: { id: true, name: true, grade: true, shift: true }, // Trazemos dados extras para ficar bonito no select
+    select: { id: true, name: true, grade: true, shift: true }, 
   });
 
-  // 3. Formata os dados
+  // Formata os dados
   const formattedStudents: StudentListItem[] = studentsRaw.map((student) => {
     const currentClass = student.enrollments[0]?.class;
     
@@ -38,7 +38,7 @@ export default async function AlunosPage() {
   return (
     <StudentsClient 
       students={formattedStudents} 
-      classes={classesAvailable} // Passamos as turmas aqui
+      classes={classesAvailable} 
     />
   );
 }
