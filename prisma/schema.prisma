@@ -120,3 +120,13 @@ model Grade {
   classId   String
   class     Class   @relation(fields: [classId], references: [id])
 }
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text // Permite textos longos
+  imageUrl  String?  // Opcional: URL da imagem
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
