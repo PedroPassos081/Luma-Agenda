@@ -27,6 +27,10 @@ enum Segment {
   MEDIO
 }
 
+// ==========================================
+// USUÁRIOS E AUTENTICAÇÃO
+// ==========================================
+
 model User {
   id       String @id @default(cuid())
   name     String
@@ -37,38 +41,69 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  
-  teacherClasses  Class[] 
-  
-  
-  teacherSubjects Subject[] 
+  // Relação: Aulas que este professor leciona (Grade Curricular)
+  teachingAssignments ClassSubject[]
 }
 
+// ==========================================
+// ESTRUTURA ACADÊMICA
+// ==========================================
+
 model Class {
-  id   String @id @default(cuid())
-  name String
-  grade String
-  year Int
-  shift Shift
+  id      String  @id @default(cuid())
+  name    String  // Ex: 1º Ano A
+  grade   String  // Ex: 1º Ano
+  year    Int
+  shift   Shift
   segment Segment
-
-  
-  teachers User[] 
-
-  students Enrollment[]
-  grades   Grade[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Relações
+  students Enrollment[]   // Alunos matriculados
+  subjects ClassSubject[] // Grade curricular (Matérias desta turma)
+  grades   Grade[]        // Notas lançadas nesta turma
 }
 
-model Student {
-  id   String @id @default(cuid())
-  name String
+model Subject {
+  id        String   @id @default(cuid())
+  name      String   // Ex: Matemática
+  code      String?  // Ex: MAT-101
+  createdAt DateTime @default(now())
 
+  // Relações
+  classSubjects ClassSubject[] // Em quais turmas essa matéria existe
+  grades        Grade[]        // Notas vinculadas a essa matéria geral
+}
+
+// 
+// "Na Turma X, a matéria Y é dada pelo Professor Z"
+model ClassSubject {
+  id String @id @default(cuid())
+
+  classId String
+  class   Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id])
+
+  teacherId String? // Pode ser null se a turma estiver sem prof. dessa matéria
+  teacher   User?   @relation(fields: [teacherId], references: [id])
+
+  // Garante que não tenha duas "Matemática" na mesma turma
+  @@unique([classId, subjectId])
+}
+
+// ==========================================
+//  ALUNOS E MATRÍCULAS
+// ==========================================
+
+model Student {
+  id            String    @id @default(cuid())
+  name          String
   email         String?
-  
-  birthDate DateTime?
+  birthDate     DateTime?
   guardianName  String?
   guardianPhone String?
   guardianEmail String?
@@ -82,74 +117,77 @@ model Student {
 
 model Enrollment {
   id        String   @id @default(cuid())
-  student   Student  @relation(fields: [studentId], references: [id])
-  studentId String
-  class     Class    @relation(fields: [classId], references: [id])
-  classId   String
   createdAt DateTime @default(now())
-}
-
-model Subject {
-  id   String @id @default(cuid())
-  name String
-
-  code String?
-
-  createdAt DateTime @default(now())
-  grades    Grade[]
-  
-  teachers User[] // Relação N:N com User
-}
-
-model Grade {
-  id        String   @id @default(cuid())
-  value     Float    // Média Final (Calculada automaticamente)
-  
-  testGrade         Float?   @default(0) // 1. Avaliação / Prova
-  workGrade         Float?   @default(0) // 2. Trabalhos
-  behaviorGrade     Float?   @default(0) // 3. Participação
-
-  term      Int      // 1, 2, 3, 4
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   studentId String
   student   Student @relation(fields: [studentId], references: [id])
+  
+  classId   String
+  class     Class   @relation(fields: [classId], references: [id])
+
+  // Um aluno só pode estar matriculado uma vez na mesma turma
+  @@unique([studentId, classId])
+}
+
+// ==========================================
+//  NOTAS E AVALIAÇÕES
+// ==========================================
+
+model Grade {
+  id            String   @id @default(cuid())
+  
+  // Notas Parciais
+  testGrade     Float?   @default(0) // Provas
+  workGrade     Float?   @default(0) // Trabalhos
+  behaviorGrade Float?   @default(0) // Participação/Comportamento
+  
+  // Média Final (Calculada)
+  value         Float    
+
+  term          Int      // 1º Bimestre, 2º Bimestre...
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Conexões
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+  
   subjectId String
   subject   Subject @relation(fields: [subjectId], references: [id])
+  
   classId   String
   class     Class   @relation(fields: [classId], references: [id])
 }
 
+// ==========================================
+// 5. SISTEMA GERAL
+// ==========================================
+
 model Announcement {
   id        String   @id @default(cuid())
   title     String
-  content   String   @db.Text // Permite textos longos
-  imageUrl  String?  // Opcional: URL da imagem
-  
+  content   String   @db.Text
+  imageUrl  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model SchoolSettings {
   id              String   @id @default(cuid())
-  
-  // Perfil da Escola
   schoolName      String   @default("Minha Escola")
-  schoolLogo      String?  // Caminho da imagem 
+  schoolLogo      String?
   cnpj            String?
   address         String?
   phone           String?
-
-  // Acadêmico
+  
   currentYear     String   @default("2025")
   passingGrade    Float    @default(6.0)
-  periodicity     String   @default("BIMESTRAL") // BIMESTRAL, TRIMESTRAL, SEMESTRAL
+  periodicity     String   @default("BIMESTRAL")
   minFrequency    Float    @default(75.0)
-
-  // Sistema
-  isGradesVisible Boolean  @default(false) // Se false, pais não veem notas
-  isMaintenance   Boolean  @default(false) // Se true, bloqueia login de pais
-
+  
+  isGradesVisible Boolean  @default(false)
+  isMaintenance   Boolean  @default(false)
+  
   updatedAt       DateTime @updatedAt
 }
