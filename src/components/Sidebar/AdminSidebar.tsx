@@ -88,7 +88,7 @@ export function AdminSidebar() {
         icon={<FileText />}
       />
       <SidebarItem
-        href="/admin/config"
+        href="/admin/configuracoes"
         label="Configurações"
         icon={<Settings />}
       />
